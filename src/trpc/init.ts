@@ -6,11 +6,21 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { cache } from 'react';
+
+type SessionWithUserId = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+  } & Record<string, unknown>;
+} & Record<string, unknown>;
+
 export const createTRPCContext = cache(async () => {
   /**
    * @see: https://trpc.io/docs/server/context
    */
-  return { userId: 'user_123' };
+  return {};
 });
 // Avoid exporting the entire t-object
 // since it's not very descriptive.
@@ -35,7 +45,20 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Unauthorized" });
   }
 
-  return next({ ctx: { ...ctx, auth: session } });
+  const sessionUser = session.user as Record<string, unknown> | undefined;
+
+  if (
+    !sessionUser ||
+    typeof sessionUser.id !== "string" ||
+    typeof sessionUser.name !== "string" ||
+    typeof sessionUser.email !== "string"
+  ) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session user" });
+  }
+
+  const authSession: SessionWithUserId = session as SessionWithUserId;
+
+  return next({ ctx: { ...ctx, auth: authSession } });
 });
 export const premiumProcedure = (entity: "meetings" | "agents") =>
   protectedProcedure.use(async ({ ctx, next }) => {

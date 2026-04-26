@@ -7,12 +7,35 @@ import {
   protectedProcedure,
 } from "@/trpc/init";
 
+type CurrentSubscription = {
+  id: string;
+  name: string;
+} | null;
+
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  metadata: {
+    variant?: string;
+    badge?: string | null;
+  };
+  prices: Array<{
+    amountType: "fixed" | "free";
+    priceAmount: number;
+    recurringInterval: string;
+  }>;
+  benefits: Array<{
+    description: string;
+  }>;
+};
+
 export const premiumRouter = createTRPCRouter({
-  getCurrentSubscription: protectedProcedure.query(async () => {
+  getCurrentSubscription: protectedProcedure.query(async (): Promise<CurrentSubscription> => {
     // MVP: No subscription system - all users on free tier
     return null;
   }),
-  getProducts: protectedProcedure.query(async () => {
+  getProducts: protectedProcedure.query(async (): Promise<Product[]> => {
     // MVP: No premium products available
     return [];
   }),
